@@ -1,7 +1,7 @@
 {
 	"name": "dateFormat",
 	"description": "Date formater based on PHPs date function",
-	"version": "1.1",
+	"version": "1.0.0",
 	"author": "Christian Tellnes <christian@tellnes.no> (http://christian.tellnes.com)",
 	"repository": {
 		"type": "git",
