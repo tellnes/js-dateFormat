@@ -188,3 +188,8 @@ Date.prototype.getWeekYear = function () {
 	
 	return target.getFullYear();
 };
+
+// If is node
+if (module.exports) {
+	module.exports = dateFormat;
+}
