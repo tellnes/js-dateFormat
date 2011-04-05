@@ -1,5 +1,5 @@
 /*
- * Date Format 1.1
+ * Date Format 1.1.1
  * (c) 2010 Christian Tellnes <christian.tellnes.com>
  * MIT license
  *
@@ -32,7 +32,7 @@ function dateFormat(date, mask) {
 	
 	var dF = dateFormat, c, dt, str = '', i = 0;
 	mask = dF.masks[mask] || mask || dF.masks["default"];
-	if (typeof mask === "function") { mask = mask(date); }
+	while (typeof mask === "function") { mask = mask(date); }
 	mask = String(mask);
 
 	
