@@ -1,5 +1,5 @@
 /*
- * Date Format 1.1.1
+ * Date Format 1.2.1
  * (c) 2010 Christian Tellnes <christian.tellnes.com>
  * MIT license
  *
@@ -12,14 +12,6 @@
  * The mask defaults to dateFormat.masks.default.
  */
 
-/*members ATOM, COOKIE, ISO8601, RFC1036, RFC1123, RFC2822, RFC3339, 
-    RFC822, RFC850, RSS, W3C, c, call, days, daysShort, default, floor, 
-    format, getDate, getDay, getFullYear, getHours, getMilliseconds, 
-    getMinutes, getMonth, getSeconds, getTime, getTimezoneOffset, getWeek, 
-    getWeekYear, i18n, length, masks, months, monthsShort, prototype, r, 
-    setDate, substr, test, toString, valueOf, toPaddedString
-*/
-
 
 function dateFormat(date, mask) {
 	if (arguments.length == 1 && Object.prototype.toString.call(date) == "[object String]" && !/\d/.test(date)) {
@@ -28,7 +20,7 @@ function dateFormat(date, mask) {
 	}
 
 	date = date ? new Date(date) : new Date();
-	if (isNaN(date)) { throw SyntaxError("invalid date"); }
+	if (isNaN(date)) { throw new SyntaxError("invalid date"); }
 	
 	var dF = dateFormat, c, dt, str = '', i = 0;
 	mask = dF.masks[mask] || mask || dF.masks["default"];
@@ -36,7 +28,13 @@ function dateFormat(date, mask) {
 	mask = String(mask);
 
 	
-	while( (c=mask[i++]) ) {
+	while ( (c=mask[i++]) ) {
+		if (c == '%') {
+			c = mask[i++];
+			if (dF.strftimeTranslate[c]) {
+				c = dF.strftimeTranslate[c];
+			}
+		}
 		switch(c){
 			case "\\":str += mask[i++]; break;
 			case "d": str += dF.toPaddedString(date.getDate()); break;
@@ -46,7 +44,7 @@ function dateFormat(date, mask) {
 			case "N": dt = date.getDay(); str += (dt===0)?7:dt; break;
 			case "S": dt = date.getDay(); str += ["th", "st", "nd", "rd"][dt % 10 > 3 ? 0 : (dt % 100 - dt % 10 != 10) * dt % 10]; break;
 			case "w": str += date.getDay(); break;
-			case "z": dt=new Date(date.getFullYear(), 0, 1); str += Math.floor(((((date.valueOf() - dt.valueOf())/1000)/60)/60)/24); break;
+			case "z": str += date.getOrdinalNumber(); break;
 
 			case "W": str += date.getWeek(1); break;
 
@@ -89,13 +87,45 @@ function dateFormat(date, mask) {
 			case 'r': str += dF(date, dF.masks.r); break;
 			case 'U': str += date.getTime()/60; break;
 
+
+			// strftime
+			case '%j': str += dF.toPaddedString(date.getOrdinalNumber(), 3); break;
+			case '%U': str += dF.getWeek(0); break;
+			case '%W': str += dF.getWeek(1); break;
+			case '%C': str += Math.floor(date.getFullYear()/100); break;
+			case '%g': str += date.getWeekYear().toString().substr(2,2); break;
+			
+			case '%r':
+			case '%R':
+			case '%T':
+			case '%D': 
+			case '%F':
+				str += dF(date, dF.masks[c]); 
+				break;
+			case '%X': str += dF(date, dF.i18n.masks.time); break;
+			case '%c': str += dF(date, dF.i18n.masks.datetime); break;
+			case '%x': str += dF(date, dF.i18n.masks.date); break;
+
 			default: str += c; break;
         }
      }
      return str;
 }
 // To padded string
-dateFormat.toPaddedString = function (a) { return (a<10)?'0'+a:a; };
+// dateFormat.toPaddedString = function (a) { return (a<10)?'0'+a:a; };
+
+dateFormat.toPaddedString = function(str, length) {
+	var i = str.length-(length || 2);
+	while(i--) {
+		str = '0'+str;
+	}
+	return str;
+};
+
+
+dateFormat.escape = function(str) {
+	return '\\'+str.split('').join('\\');
+};
 
 
 // Some common format strings
@@ -115,16 +145,73 @@ dateFormat.masks = {
 	W3C:		'Y-m-d\\TH:i:sP',
 	
 	c: 'Y-m-d\\TH:i:sO',
-	r: 'D, d M Y H:i:s O'
+	r: 'D, d M Y H:i:s O',
+	'%r': 'h:i:s A',
+	'%R': 'H:i',
+	'%T': 'H:i:s',
+	'%D': 'm/d/y',
+	'%F': 'Y-m-d'
 };
 
 dateFormat.i18n = {
 	months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
 	monthsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
 	days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday","Friday", "Saturday"],
-	daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri","Sat"]
+	daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri","Sat"],
+	masks: {
+		time: 'H:i:s',
+		datetime: 'D, d M Y H:i:s O',
+		date: 'Y-m-d'
+	}
 };
 
+dateFormat.strftimeTranslate = {
+	"a": "D",
+	"A": "l",
+	"d": "d",
+	"e": "j",
+	"j": "%j",
+	"u": "N",
+	"w": "w",
+
+	"U": "%U",
+	"V": "W",
+	"W": "%W",
+
+	"b": "M",
+	"B": "F",
+	"h": "M",
+	"m": "m",
+
+	"C": "%C",
+	"g": "%g",
+	"G": "o",
+	"y": "y",
+	"Y": "Y",
+
+	"H": "H",
+	"I": "h",
+	"l": "g",
+	"M": "i",
+	"p": "A",
+	"P": "a",
+	"r": "%r",
+	"R": "%R",
+	"S": "s",
+	"T": "%T",
+	"X": "%X",
+	"z": "e",
+	"Z": "e",
+	"c": "%c",
+	"D": "%D",
+	"F": "%F",
+	"s": "U",
+	"x": "%x",
+
+	"n": "\n",
+	"t": "\t",
+	"%": "%"
+};
 
 // For convenience...
 Date.prototype.format = function (mask) {
@@ -188,6 +275,13 @@ Date.prototype.getWeekYear = function () {
 	
 	return target.getFullYear();
 };
+
+
+Date.prototype.getOrdinalNumber = function () {
+	return Math.floor( (this - new Date(this.getFullYear(), 0, 1)) / 86400000);
+};
+
+
 
 // If is node
 if (module.exports) {
