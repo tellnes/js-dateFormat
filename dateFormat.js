@@ -112,15 +112,17 @@ function dateFormat(date, mask) {
      return str;
 }
 // To padded string
-// dateFormat.toPaddedString = function (a) { return (a<10)?'0'+a:a; };
 
 dateFormat.toPaddedString = function(str, length) {
-	var i = str.length-(length || 2);
+	str = String(str);
+	var i = (length || 2)-str.length;
+	if (i <= 0) { return str; }
 	while(i--) {
 		str = '0'+str;
 	}
 	return str;
 };
+
 
 
 dateFormat.escape = function(str) {
@@ -284,6 +286,6 @@ Date.prototype.getOrdinalNumber = function () {
 
 
 // If is node
-if (module.exports) {
+if (this.module && 'exports' in module) {
 	module.exports = dateFormat;
 }
